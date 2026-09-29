@@ -34,7 +34,7 @@ h2{font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
 .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
 .top small{color:var(--muted);font-size:13px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px}
-.who{display:grid;grid-template-columns:1fr auto;gap:10px}
+.who{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);min-width:0}
 input[type=text],input[type=date]{font:inherit;font-size:17px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;width:100%;min-width:0}
 input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
@@ -79,6 +79,8 @@ button:disabled{opacity:.45;cursor:default}
 .seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips button{flex:1 1 30%;padding:8px 6px}
+.ops{display:flex;flex-direction:column;gap:8px}
+.ops .grp{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .chips button[aria-pressed=true]{background:var(--soft);border-color:var(--accent);color:var(--ink);font-weight:600;box-shadow:inset 0 0 0 1px var(--accent)}
 .dur-box{display:flex;flex-direction:column;gap:8px;align-items:stretch}
 .dur-val{font-family:var(--f-display);font-weight:700;font-size:48px;text-align:center;font-variant-numeric:tabular-nums;line-height:1}
@@ -106,10 +108,13 @@ button:disabled{opacity:.45;cursor:default}
   </div>
 
   <div class="card who">
-    <label class="f" for="nom">Nom du salarié
-      <input type="text" id="nom" autocomplete="name" placeholder="NOM Prénom">
+    <label class="f" for="nomF">Nom
+      <input type="text" id="nomF" autocomplete="family-name" autocapitalize="characters" placeholder="ex. DUPONT">
     </label>
-    <label class="f" for="date">Date
+    <label class="f" for="prenom">Prénom
+      <input type="text" id="prenom" autocomplete="given-name" autocapitalize="words" placeholder="ex. Jean">
+    </label>
+    <label class="f" for="date" style="grid-column:1/-1">Date
       <input type="date" id="date">
     </label>
   </div>
@@ -125,9 +130,9 @@ button:disabled{opacity:.45;cursor:default}
       <div style="text-align:right">
         <div class="lbl">Journée</div>
         <div class="day">
-          <button class="sq" id="dayMinus" aria-label="Journée moins 15 minutes">−</button>
+          <button class="sq" id="dayMinus" aria-label="Journée moins 5 minutes">−</button>
           <b id="journee">8h30</b>
-          <button class="sq" id="dayPlus" aria-label="Journée plus 15 minutes">+</button>
+          <button class="sq" id="dayPlus" aria-label="Journée plus 5 minutes">+</button>
         </div>
       </div>
     </div>
@@ -143,19 +148,23 @@ button:disabled{opacity:.45;cursor:default}
   <section class="card ed" id="editor">
     <div class="top"><h2 id="edTitle">Ajouter un lot</h2><small class="hint" id="edHint"></small></div>
 
-    <div class="seg" role="group" aria-label="Type de référence">
-      <button id="tAff" aria-pressed="true">N° affaire</button>
-      <button id="tCode" aria-pressed="false">Code prépa / devis</button>
-    </div>
-    <label class="f" for="ref"><span id="refLbl">N° affaire</span>
-      <input type="text" id="ref" autocapitalize="characters" autocomplete="off" placeholder="ex. A2026-118">
-    </label>
-
     <div class="seg" role="group" aria-label="Ligne">
       <button id="lYuze" aria-pressed="true">Yuze</button>
       <button id="lShelter" aria-pressed="false">Shelter</button>
+      <button id="lDivers" aria-pressed="false">Divers atelier</button>
     </div>
     <div class="chips" id="details" role="group" aria-label="Détail heures"></div>
+
+    <div class="seg" role="group" aria-label="Type de référence" id="refSeg">
+      <button id="tLot" aria-pressed="true">N° du lot / N° du devis</button>
+      <button id="tAff" aria-pressed="false">N° d'affaire</button>
+    </div>
+    <label class="f" for="ref"><span id="refLbl">N° du lot / N° du devis</span>
+      <input type="text" id="ref" autocapitalize="characters" autocomplete="off" placeholder="ex. JA26431 / 7541">
+    </label>
+    <label class="f" for="com">Commentaire (facultatif)
+      <input type="text" id="com" autocomplete="off" placeholder="ex. Réunion, Top 5…">
+    </label>
 
     <div class="seg" role="group" aria-label="Statut">
       <button id="sEnc" aria-pressed="true">En cours</button>
@@ -198,16 +207,27 @@ button:disabled{opacity:.45;cursor:default}
 <script>
 // ---------- Configuration (lien Forms pré-rempli : NOM, DATE, DETAIL, TOTAL comme valeurs repères)
 const FORM_TEMPLATE = "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=kP70XPwwDEC7J6qKvEznn6Ni1tal26lEjqYnsNiF8bVUQUlKTlJURVY3RFNKQjVCUURCOU8zTjRDWC4u&rf4d17d8abc0c46f183b413df000949b6=NOM&r284fbb1cb6ba41718e93dd3a1c037e24=DATE&re245ff36a8384a53861f19479e9cf24c=DETAIL&r9d1485f3aac2460ea477379ed499888c=TOTAL";
+// Opérations = liste Base!H du fichier « Suivi productivité Série »
 const DETAILS = {
-  Yuze: ["Prépa","Câblage","Ctrl","Robot"],
+  Yuze: ["Prépa","Programmation","Câblage","Contrôle","Robot"],
   Shelter: ["Prépa caisse","Tableaux","AGCP","Intégration","Contrôle"]
 };
+const OP_DIVERS = "Divers Atelier";
+const affDivers = () => String(Number(S.date.slice(0,4)) * 10000);   // 20260000 en 2026
 const KEY = "pointage-atelier-v1";
 
 // ---------- state
 const today = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
 let S = { nom:"", date:today(), journee:510, lots:[], sent:false, v:2 };
 try { const s = JSON.parse(localStorage.getItem(KEY)||"null"); if (s) { if (!s.v) { if (s.journee===450) s.journee=510; s.v=2; } S = Object.assign(S, s); } } catch(e){}
+S.lots = (S.lots||[]).map(l => {
+  const op = l.op || (l.detail==="Ctrl" ? "Contrôle" : (l.detail||""));
+  const ligne = (op===OP_DIVERS || op==="Formation") ? "Divers" : (l.ligne==="Shelter" || DETAILS.Shelter.includes(op) && !DETAILS.Yuze.includes(op)) ? "Shelter" : "Yuze";
+  return Object.assign({}, l, { op: ligne==="Divers" ? OP_DIVERS : op, ligne, type: l.type==="aff" ? "aff" : "lot", com: l.com||"" });
+});
+if (S.nom && S.nomF===undefined){ const t=S.nom.trim().split(/\s+/); S.nomF=t.shift()||""; S.prenom=t.join(" "); }
+S.nomF = S.nomF||""; S.prenom = S.prenom||"";
+const fullName = () => (S.nomF.trim().toUpperCase() + " " + S.prenom.trim()).trim();
 let bannerText = "";
 if (S.date !== today()) {
   if (S.sent || !S.lots.length) { S.date = today(); S.lots = []; S.sent = false; }
@@ -217,7 +237,7 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch
 
 // editor state
 let E, editIdx = -1;
-function blank(){ return { type:"aff", ref:"", ligne:(S.lots.at(-1)||{}).ligne||"Yuze", detail:"", statut:"En cours", min:0 }; }
+function blank(){ const lg = (S.lots.at(-1)||{}).ligne; return { ligne: lg==="Shelter" ? "Shelter" : "Yuze", type:"lot", ref:"", op:"", com:"", statut:"En cours", min:0 }; }
 E = blank();
 
 // ---------- helpers
@@ -231,7 +251,9 @@ function press(on, off){ on.setAttribute("aria-pressed","true"); off.setAttribut
 
 // ---------- render
 function render(){
-  $("nom").value = S.nom; $("date").value = S.date;
+  if (document.activeElement!==$("nomF")) $("nomF").value = S.nomF;
+  if (document.activeElement!==$("prenom")) $("prenom").value = S.prenom;
+  $("date").value = S.date;
   $("journee").textContent = hm(S.journee);
   const u = used(), rest = S.journee - u;
   $("reste").textContent = hm(rest);
@@ -245,14 +267,14 @@ function render(){
   $("banner").hidden = !bannerText; $("banner").textContent = bannerText;
 
   const ul = $("lots"); ul.innerHTML = "";
-  if (!S.lots.length){ const li=document.createElement("li"); li.className="empty"; li.textContent="Aucun lot pour l'instant. Remplis le cadre ci-dessous puis « Ajouter le lot »."; ul.appendChild(li); }
+  if (!S.lots.length){ const li=document.createElement("li"); li.className="empty"; li.textContent="Aucun lot pour l'instant. Remplis le cadre ci-dessous puis « Ajouter »."; ul.appendChild(li); }
   S.lots.forEach((l,i)=>{
     const li=document.createElement("li"); li.className="lot"+(i===editIdx?" sel":""); li.tabIndex=0;
     li.setAttribute("aria-label","Modifier le lot "+(l.ref||"sans référence"));
-    const ref=document.createElement("div"); ref.className="ref"; ref.textContent=(l.type==="aff"?"Affaire ":"Code ")+(l.ref||"—");
+    const ref=document.createElement("div"); ref.className="ref"; ref.textContent=l.ligne==="Divers" ? "Divers atelier" : (l.type==="aff"?"Affaire ":"Lot ")+l.ref;
     const dur=document.createElement("div"); dur.className="dur"; dur.textContent=hm(l.min);
     const sub=document.createElement("div"); sub.className="sub";
-    const t=document.createElement("span"); t.textContent=l.ligne+" · "+(l.detail||"sans détail");
+    const t=document.createElement("span"); t.textContent=(l.ligne==="Divers" ? "Affaire "+l.ref : l.ligne+" · "+l.op) + (l.com ? " · "+l.com : "");
     const p=document.createElement("span"); p.className="pill "+(l.statut==="Terminé"?"ter":"enc"); p.textContent=l.statut;
     sub.append(t,p); li.append(ref,dur,sub);
     const open=()=>{ editIdx=i; E=Object.assign({},l); renderEditor(); render(); $("editor").scrollIntoView({behavior:"smooth",block:"start"}); };
@@ -261,7 +283,7 @@ function render(){
   });
 
   // recap + send
-  const ok = S.lots.length>0 && S.nom.trim() && rest===0;
+  const ok = S.lots.length>0 && S.nomF.trim() && S.prenom.trim() && rest===0;
   const rc = recapText();
   $("recapCard").hidden = !S.lots.length;
   $("recap").textContent = rc;
@@ -278,13 +300,14 @@ function render(){
 }
 
 function renderEditor(){
-  press(E.type==="aff"?$("tAff"):$("tCode"), E.type==="aff"?$("tCode"):$("tAff"));
-  $("refLbl").textContent = E.type==="aff" ? "N° affaire" : "Code prépa ou n° de devis";
-  $("ref").placeholder = E.type==="aff" ? "ex. A2026-118" : "ex. PREP-045";
-  $("ref").value = E.ref;
-  press(E.ligne==="Yuze"?$("lYuze"):$("lShelter"), E.ligne==="Yuze"?$("lShelter"):$("lYuze"));
-  const box=$("details"); box.innerHTML="";
-  DETAILS[E.ligne].forEach(d=>{ const b=document.createElement("button"); b.type="button"; b.textContent=d; b.setAttribute("aria-pressed", String(E.detail===d)); b.onclick=()=>{E.detail=d; renderEditor();}; box.appendChild(b); });
+  ["Yuze","Shelter","Divers"].forEach(g => $("l"+g).setAttribute("aria-pressed", String(E.ligne===g)));
+  const box=$("details"); box.innerHTML=""; box.hidden = E.ligne==="Divers";
+  (DETAILS[E.ligne]||[]).forEach(o=>{ const b=document.createElement("button"); b.type="button"; b.textContent=o; b.setAttribute("aria-pressed", String(E.op===o)); b.onclick=()=>{ keepInputs(); E.op=o; renderEditor(); }; box.appendChild(b); });
+  press(E.type==="aff"?$("tAff"):$("tLot"), E.type==="aff"?$("tLot"):$("tAff"));
+  $("refSeg").hidden = E.ligne==="Divers";
+  $("refLbl").textContent = E.type==="aff" ? "N° d'affaire" : "N° du lot / N° du devis";
+  $("ref").placeholder = E.type==="aff" ? "ex. 20260100" : "ex. JA26431 / 7541";
+  $("ref").value = E.ref; $("com").value = E.com||"";
   press(E.statut==="En cours"?$("sEnc"):$("sTer"), E.statut==="En cours"?$("sTer"):$("sEnc"));
   $("durVal").textContent = hm(E.min);
   const editing = editIdx>=0;
@@ -297,12 +320,13 @@ function renderEditor(){
 }
 
 function recapText(){
-  const lines = S.lots.map(l => [(l.type==="aff"?"Affaire ":"Code ")+(l.ref||"—"), l.ligne+" - "+(l.detail||"?"), l.statut, hmColon(l.min)].join(" | "));
-  return (S.nom||"(nom ?)")+" — "+fmtDate(S.date)+"\n"+lines.join("\n")+"\nTOTAL "+hmColon(used())+" / journée "+hmColon(S.journee);
+  const lines = S.lots.map(l => [(l.type==="aff"?"Affaire ":"Lot ")+l.ref, l.ligne==="Divers" ? "Divers atelier" : l.ligne+" - "+l.op, l.statut, hmColon(l.min)].concat(l.com?[l.com]:[]).join(" | "));
+  return (fullName()||"(nom ?)")+" — "+fmtDate(S.date)+"\n"+lines.join("\n")+"\nTOTAL "+hmColon(used())+" / journée "+hmColon(S.journee);
 }
 function formUrl(){
-  const detail = S.lots.map(l => [l.type==="aff"?"AFF":"CODE", l.ref||"", l.ligne, l.detail||"", l.statut, hmColon(l.min)].join(" | ")).join("\n");
-  const map = { NOM:S.nom.trim(), DATE:fmtDate(S.date), DETAIL:detail, TOTAL:hmColon(used()) };
+  const cl = t => String(t||"").replace(/[|\r\n]+/g," ").trim();
+  const detail = S.lots.map(l => [l.type==="aff"?"AFF":"LOT", cl(l.ref), l.op, l.statut, hmColon(l.min), cl(l.com)].join(" | ")).join("\n");
+  const map = { NOM:fullName(), DATE:fmtDate(S.date), DETAIL:detail, TOTAL:hmColon(used()) };
   const [base, qs=""] = FORM_TEMPLATE.split("?");
   const parts = qs.split("&").map(p => {
     const i = p.indexOf("="); if (i < 0) return p;
@@ -313,15 +337,31 @@ function formUrl(){
 }
 
 // ---------- events
-$("nom").oninput = e => { S.nom = e.target.value; save(); render(); };
+$("nomF").oninput = e => { S.nomF = e.target.value; save(); render(); };
+$("prenom").oninput = e => { S.prenom = e.target.value; save(); render(); };
 $("date").onchange = e => { S.date = e.target.value || today(); bannerText=""; save(); render(); };
-$("dayMinus").onclick = () => { S.journee = Math.max(15, S.journee-15); save(); render(); renderEditor(); };
-$("dayPlus").onclick  = () => { S.journee = Math.min(14*60, S.journee+15); save(); render(); renderEditor(); };
-$("tAff").onclick = () => { E.type="aff"; renderEditor(); };
-$("tCode").onclick = () => { E.type="code"; renderEditor(); };
+$("dayMinus").onclick = () => { S.journee = Math.max(5, S.journee-5); save(); render(); renderEditor(); };
+$("dayPlus").onclick  = () => { S.journee = Math.min(14*60, S.journee+5); save(); render(); renderEditor(); };
+function keepInputs(){ E.ref=$("ref").value.trim().toUpperCase(); E.com=$("com").value; }
+$("tLot").onclick = () => { keepInputs(); E.type="lot"; renderEditor(); };
+$("tAff").onclick = () => { keepInputs(); E.type="aff"; renderEditor(); };
+$("lYuze").onclick = () => setLigne("Yuze");
+$("lShelter").onclick = () => setLigne("Shelter");
+$("lDivers").onclick = () => setLigne("Divers");
+function setLigne(g){
+  keepInputs();
+  if (E.ligne===g) return;
+  const wasDivers = E.ligne==="Divers";
+  E.ligne = g;
+  if (g==="Divers"){ E.op=OP_DIVERS; E.type="aff"; E.ref=affDivers(); E.statut="Terminé"; }
+  else {
+    if (!DETAILS[g].includes(E.op)) E.op="";
+    if (wasDivers){ E.type="lot"; E.ref=""; E.statut="En cours"; }
+  }
+  renderEditor();
+}
 $("ref").oninput = e => { E.ref = e.target.value.toUpperCase(); };
-$("lYuze").onclick = () => { if(E.ligne!=="Yuze"){E.ligne="Yuze"; E.detail="";} renderEditor(); };
-$("lShelter").onclick = () => { if(E.ligne!=="Shelter"){E.ligne="Shelter"; E.detail="";} renderEditor(); };
+$("com").oninput = e => { E.com = e.target.value; };
 $("sEnc").onclick = () => { E.statut="En cours"; renderEditor(); };
 $("sTer").onclick = () => { E.statut="Terminé"; renderEditor(); };
 document.querySelectorAll(".steps button").forEach(b => b.onclick = () => {
@@ -332,8 +372,9 @@ document.querySelectorAll(".steps button").forEach(b => b.onclick = () => {
   $("durVal").textContent = hm(E.min);
 });
 $("edSave").onclick = () => {
-  E.ref = $("ref").value.trim().toUpperCase();
-  const err = !E.ref ? "Indique le n° d'affaire ou le code prépa." : !E.detail ? "Choisis le détail (Câblage, Ctrl…)." : E.min<=0 ? "Mets le temps passé sur ce lot." : "";
+  E.ref = $("ref").value.trim().toUpperCase(); E.com = $("com").value.trim();
+  if (E.ligne==="Divers"){ E.op=OP_DIVERS; E.type="aff"; if(!E.ref) E.ref=affDivers(); }
+  const err = !E.op ? "Choisis l'étape (Câblage, Robot…)." : !E.ref ? "Indique le n° du lot, du devis ou de l'affaire." : E.min<=0 ? "Mets le temps passé sur ce lot." : "";
   if (err){ $("edErr").textContent = err; $("edErr").hidden = false; return; }
   if (editIdx>=0) S.lots[editIdx] = Object.assign({}, E); else S.lots.push(Object.assign({}, E));
   S.sent = false; editIdx = -1; E = blank(); save(); render(); renderEditor();
