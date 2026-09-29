@@ -197,7 +197,7 @@ button:disabled{opacity:.45;cursor:default}
 
 <script>
 // ---------- Configuration (lien Forms pré-rempli : NOM, DATE, DETAIL, TOTAL comme valeurs repères)
-const FORM_TEMPLATE = "";
+const FORM_TEMPLATE = "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=kP70XPwwDEC7J6qKvEznn6Ni1tal26lEjqYnsNiF8bVUQUlKTlJURVY3RFNKQjVCUURCOU8zTjRDWC4u&rf4d17d8abc0c46f183b413df000949b6=NOM&r284fbb1cb6ba41718e93dd3a1c037e24=DATE&re245ff36a8384a53861f19479e9cf24c=DETAIL&r9d1485f3aac2460ea477379ed499888c=TOTAL";
 const DETAILS = {
   Yuze: ["Prépa","Câblage","Ctrl","Robot"],
   Shelter: ["Prépa caisse","Tableaux","AGCP","Intégration","Contrôle"]
@@ -303,11 +303,13 @@ function recapText(){
 function formUrl(){
   const detail = S.lots.map(l => [l.type==="aff"?"AFF":"CODE", l.ref||"", l.ligne, l.detail||"", l.statut, hmColon(l.min)].join(" | ")).join("\n");
   const map = { NOM:S.nom.trim(), DATE:fmtDate(S.date), DETAIL:detail, TOTAL:hmColon(used()) };
-  try {
-    const u = new URL(FORM_TEMPLATE);
-    for (const [k,v] of [...u.searchParams]) if (map[v] !== undefined) u.searchParams.set(k, map[v]);
-    return u.toString();
-  } catch(e){ return FORM_TEMPLATE; }
+  const [base, qs=""] = FORM_TEMPLATE.split("?");
+  const parts = qs.split("&").map(p => {
+    const i = p.indexOf("="); if (i < 0) return p;
+    const k = p.slice(0,i), v = decodeURIComponent(p.slice(i+1));
+    return map[v] !== undefined ? k + "=" + encodeURIComponent(map[v]) : p;
+  });
+  return base + "?" + parts.join("&");
 }
 
 // ---------- events
