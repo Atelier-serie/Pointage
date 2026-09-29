@@ -162,7 +162,7 @@ button:disabled{opacity:.45;cursor:default}
     <label class="f" for="ref"><span id="refLbl">N° du lot / N° du devis</span>
       <input type="text" id="ref" autocapitalize="characters" autocomplete="off" placeholder="ex. JA26431 / 7541">
     </label>
-    <label class="f" for="com">Commentaire (facultatif)
+    <label class="f" for="com"><span id="comLbl">Commentaire (facultatif)</span>
       <input type="text" id="com" autocomplete="off" placeholder="ex. Réunion, Top 5…">
     </label>
 
@@ -308,6 +308,7 @@ function renderEditor(){
   $("refLbl").textContent = E.type==="aff" ? "N° d'affaire" : "N° du lot / N° du devis";
   $("ref").placeholder = E.type==="aff" ? "ex. 20260100" : "ex. JA26431 / 7541";
   $("ref").value = E.ref; $("com").value = E.com||"";
+  $("comLbl").textContent = E.ligne==="Divers" ? "Commentaire (obligatoire)" : "Commentaire (facultatif)";
   press(E.statut==="En cours"?$("sEnc"):$("sTer"), E.statut==="En cours"?$("sTer"):$("sEnc"));
   $("durVal").textContent = hm(E.min);
   const editing = editIdx>=0;
@@ -374,7 +375,7 @@ document.querySelectorAll(".steps button").forEach(b => b.onclick = () => {
 $("edSave").onclick = () => {
   E.ref = $("ref").value.trim().toUpperCase(); E.com = $("com").value.trim();
   if (E.ligne==="Divers"){ E.op=OP_DIVERS; E.type="aff"; if(!E.ref) E.ref=affDivers(); }
-  const err = !E.op ? "Choisis l'étape (Câblage, Robot…)." : !E.ref ? "Indique le n° du lot, du devis ou de l'affaire." : E.min<=0 ? "Mets le temps passé sur ce lot." : "";
+  const err = !E.op ? "Choisis l'étape (Câblage, Robot…)." : !E.ref ? "Indique le n° du lot, du devis ou de l'affaire." : (E.ligne==="Divers" && !E.com) ? "Indique en commentaire ce que tu as fait (Réunion, Top 5, rangement…)." : E.min<=0 ? "Mets le temps passé sur ce lot." : "";
   if (err){ $("edErr").textContent = err; $("edErr").hidden = false; return; }
   if (editIdx>=0) S.lots[editIdx] = Object.assign({}, E); else S.lots.push(Object.assign({}, E));
   S.sent = false; editIdx = -1; E = blank(); save(); render(); renderEditor();
