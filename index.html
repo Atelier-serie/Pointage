@@ -85,7 +85,7 @@ button:disabled{opacity:.45;cursor:default}
 .dur-box{display:flex;flex-direction:column;gap:8px;align-items:stretch}
 .dur-val{font-family:var(--f-display);font-weight:700;font-size:48px;text-align:center;font-variant-numeric:tabular-nums;line-height:1}
 .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.steps button{padding:8px 0;font-weight:600;font-variant-numeric:tabular-nums}
+.steps button{padding:8px 0;font-weight:600;font-variant-numeric:tabular-nums;font-size:14px;white-space:nowrap}
 .ed .acts{display:flex;gap:8px}
 .ed .acts .pri{flex:1}
 .hint{font-size:13px;color:var(--muted)}
@@ -175,8 +175,8 @@ button:disabled{opacity:.45;cursor:default}
       <div class="lbl" style="text-align:center">Temps passé sur ce lot</div>
       <div class="dur-val" id="durVal">0h00</div>
       <div class="steps">
-        <button data-d="-1" aria-label="moins 1 minute">−1</button><button data-d="-5" aria-label="moins 5 minutes">−5</button><button data-d="-15" aria-label="moins 15 minutes">−15</button><button data-d="-60" aria-label="moins 1 heure">−1h</button><button data-d="0">Zéro</button>
-        <button data-d="1" aria-label="plus 1 minute">+1</button><button data-d="5" aria-label="plus 5 minutes">+5</button><button data-d="15" aria-label="plus 15 minutes">+15</button><button data-d="60" aria-label="plus 1 heure">+1h</button><button id="allRest" data-d="rest">Le reste</button>
+        <button data-d="-1" aria-label="moins 1 minute">−1 min</button><button data-d="-5" aria-label="moins 5 minutes">−5 min</button><button data-d="-15" aria-label="moins 15 minutes">−15 min</button><button data-d="-60" aria-label="moins 1 heure">−1h</button><button data-d="0">Zéro</button>
+        <button data-d="1" aria-label="plus 1 minute">+1 min</button><button data-d="5" aria-label="plus 5 minutes">+5 min</button><button data-d="15" aria-label="plus 15 minutes">+15 min</button><button data-d="60" aria-label="plus 1 heure">+1h</button><button id="allRest" data-d="rest">Le reste</button>
       </div>
       <div class="hint" style="text-align:center">« Le reste » met tout le temps restant sur ce lot.</div>
     </div>
