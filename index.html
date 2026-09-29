@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+</head><body>
+<title>Pointage Atelier Série</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column, big "reste" counter first (like a panel meter), then the day's lots, then the entry panel. */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --ink:#18212b; --muted:#5b6876; --line:#d3dae2;
+  --accent:#1c5fa8; --accent-ink:#ffffff; --soft:#e3ecf6;
+  --ok:#1f7a45; --ok-soft:#dff1e6; --warn:#a45f00; --warn-soft:#fbeed8; --bad:#b3261e; --bad-soft:#f9e1df;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12171d; --panel:#1b222a; --ink:#e6ebf0; --muted:#95a2b0; --line:#2e3843;
+  --accent:#6aa6e8; --accent-ink:#0d1520; --soft:#1f2d3d;
+  --ok:#5cc98a; --ok-soft:#173326; --warn:#f0a94a; --warn-soft:#3a2a12; --bad:#f08077; --bad-soft:#3b1d1b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171d; --panel:#1b222a; --ink:#e6ebf0; --muted:#95a2b0; --line:#2e3843;
+  --accent:#6aa6e8; --accent-ink:#0d1520; --soft:#1f2d3d;
+  --ok:#5cc98a; --ok-soft:#173326; --warn:#f0a94a; --warn-soft:#3a2a12; --bad:#f08077; --bad-soft:#3b1d1b; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.4;padding:0 16px}
+.wrap{max-width:520px;margin:0 auto;padding-block:14px 110px;display:flex;flex-direction:column;gap:14px}
+h1,h2{font-family:var(--f-display);margin:0;letter-spacing:.02em}
+h1{font-size:22px;font-weight:700;text-transform:uppercase}
+h2{font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.top small{color:var(--muted);font-size:13px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.who{display:grid;grid-template-columns:1fr auto;gap:10px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);min-width:0}
+input[type=text],input[type=date]{font:inherit;font-size:17px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;width:100%;min-width:0}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* meter */
+.meter{display:flex;flex-direction:column;gap:10px}
+.meter .row{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.big{font-family:var(--f-display);font-weight:700;font-size:68px;line-height:.9;font-variant-numeric:tabular-nums}
+.meter[data-state=left] .big{color:var(--warn)}
+.meter[data-state=done] .big{color:var(--ok)}
+.meter[data-state=over] .big{color:var(--bad)}
+.lbl{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.day{display:flex;align-items:center;gap:6px}
+.day b{font-family:var(--f-display);font-size:24px;font-variant-numeric:tabular-nums;min-width:62px;text-align:center}
+.bar{height:10px;border-radius:5px;background:var(--bg);border:1px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--warn);width:0;transition:width .2s}
+.meter[data-state=done] .bar i{background:var(--ok)}
+.meter[data-state=over] .bar i{background:var(--bad)}
+.msg{font-size:14px;font-weight:500}
+
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:10px 12px;min-height:44px}
+button.sq{width:44px;padding:0;font-size:20px;font-weight:600}
+button.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button:disabled{opacity:.45;cursor:default}
+
+/* lots */
+.lots{display:flex;flex-direction:column;gap:8px;list-style:none;margin:0;padding:0}
+.lot{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:pointer}
+.lot .ref{font-weight:600;overflow-wrap:anywhere;min-width:0}
+.lot .dur{font-family:var(--f-display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;grid-row:span 2}
+.lot .sub{font-size:13px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pill{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:20px}
+.pill.enc{background:var(--warn-soft);color:var(--warn)}
+.pill.ter{background:var(--ok-soft);color:var(--ok)}
+.lot.sel{border-color:var(--accent);background:var(--soft)}
+.empty{color:var(--muted);font-size:14px;padding:6px 2px}
+
+/* editor */
+.ed{display:flex;flex-direction:column;gap:12px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1 1 auto}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{flex:1 1 30%;padding:8px 6px}
+.chips button[aria-pressed=true]{background:var(--soft);border-color:var(--accent);color:var(--ink);font-weight:600;box-shadow:inset 0 0 0 1px var(--accent)}
+.dur-box{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.dur-val{font-family:var(--f-display);font-weight:700;font-size:48px;text-align:center;font-variant-numeric:tabular-nums;line-height:1}
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.steps button{padding:8px 0;font-weight:600;font-variant-numeric:tabular-nums}
+.ed .acts{display:flex;gap:8px}
+.ed .acts .pri{flex:1}
+.hint{font-size:13px;color:var(--muted)}
+.err{color:var(--bad);font-size:14px;font-weight:500}
+
+/* bottom bar */
+.bottom{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.bottom .in{max-width:520px;margin:0 auto;display:flex;gap:8px}
+.bottom .send{flex:1;display:flex;align-items:center;justify-content:center;text-decoration:none;border-radius:8px;min-height:48px;font-weight:600;font-size:17px;background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent)}
+.bottom .send[aria-disabled=true]{opacity:.45;pointer-events:none}
+.recap{white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;margin:0}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:500}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>Pointage atelier série</h1>
+    <small>SATE · fiche RH PR2 FO2</small>
+  </div>
+
+  <div class="card who">
+    <label class="f" for="nom">Nom du salarié
+      <input type="text" id="nom" autocomplete="name" placeholder="NOM Prénom">
+    </label>
+    <label class="f" for="date">Date
+      <input type="date" id="date">
+    </label>
+  </div>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <section class="card meter" id="meter" data-state="left" aria-live="polite">
+    <div class="row">
+      <div>
+        <div class="lbl">Reste à pointer</div>
+        <div class="big" id="reste">8h30</div>
+      </div>
+      <div style="text-align:right">
+        <div class="lbl">Journée</div>
+        <div class="day">
+          <button class="sq" id="dayMinus" aria-label="Journée moins 15 minutes">−</button>
+          <b id="journee">8h30</b>
+          <button class="sq" id="dayPlus" aria-label="Journée plus 15 minutes">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="bar"><i id="barFill"></i></div>
+    <div class="msg" id="msg">Ajoute tes lots : le compteur descend tout seul.</div>
+  </section>
+
+  <section class="card" style="display:flex;flex-direction:column;gap:10px">
+    <div class="top"><h2>Mes lots du jour</h2><small id="total">Total 0h00</small></div>
+    <ul class="lots" id="lots"></ul>
+  </section>
+
+  <section class="card ed" id="editor">
+    <div class="top"><h2 id="edTitle">Ajouter un lot</h2><small class="hint" id="edHint"></small></div>
+
+    <div class="seg" role="group" aria-label="Type de référence">
+      <button id="tAff" aria-pressed="true">N° affaire</button>
+      <button id="tCode" aria-pressed="false">Code prépa / devis</button>
+    </div>
+    <label class="f" for="ref"><span id="refLbl">N° affaire</span>
+      <input type="text" id="ref" autocapitalize="characters" autocomplete="off" placeholder="ex. A2026-118">
+    </label>
+
+    <div class="seg" role="group" aria-label="Ligne">
+      <button id="lYuze" aria-pressed="true">Yuze</button>
+      <button id="lShelter" aria-pressed="false">Shelter</button>
+    </div>
+    <div class="chips" id="details" role="group" aria-label="Détail heures"></div>
+
+    <div class="seg" role="group" aria-label="Statut">
+      <button id="sEnc" aria-pressed="true">En cours</button>
+      <button id="sTer" aria-pressed="false">Terminé</button>
+    </div>
+
+    <div class="dur-box">
+      <div class="lbl" style="text-align:center">Temps passé sur ce lot</div>
+      <div class="dur-val" id="durVal">0h00</div>
+      <div class="steps">
+        <button data-d="-1" aria-label="moins 1 minute">−1</button><button data-d="-5" aria-label="moins 5 minutes">−5</button><button data-d="-15" aria-label="moins 15 minutes">−15</button><button data-d="-60" aria-label="moins 1 heure">−1h</button><button data-d="0">Zéro</button>
+        <button data-d="1" aria-label="plus 1 minute">+1</button><button data-d="5" aria-label="plus 5 minutes">+5</button><button data-d="15" aria-label="plus 15 minutes">+15</button><button data-d="60" aria-label="plus 1 heure">+1h</button><button id="allRest" data-d="rest">Le reste</button>
+      </div>
+      <div class="hint" style="text-align:center">« Le reste » met tout le temps restant sur ce lot.</div>
+    </div>
+
+    <div class="err" id="edErr" hidden></div>
+    <div class="acts">
+      <button id="edDel" hidden>Supprimer</button>
+      <button id="edCancel" hidden>Annuler</button>
+      <button class="pri" id="edSave">Ajouter le lot</button>
+    </div>
+  </section>
+
+  <section class="card" id="recapCard" hidden style="display:flex;flex-direction:column;gap:10px">
+    <h2>Récap à recopier</h2>
+    <pre class="recap" id="recap"></pre>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button id="copy">Copier</button>
+      <button id="newDay">Nouvelle journée</button>
+    </div>
+    <div class="hint" id="copyMsg"></div>
+  </section>
+</div>
+
+<div class="bottom"><div class="in">
+  <a class="send" id="send" href="#" target="_blank" rel="noopener" aria-disabled="true">Envoyer ma journée</a>
+</div></div>
+
+<script>
+// ---------- Configuration (lien Forms pré-rempli : NOM, DATE, DETAIL, TOTAL comme valeurs repères)
+const FORM_TEMPLATE = "";
+const DETAILS = {
+  Yuze: ["Prépa","Câblage","Ctrl","Robot"],
+  Shelter: ["Prépa caisse","Tableaux","AGCP","Intégration","Contrôle"]
+};
+const KEY = "pointage-atelier-v1";
+
+// ---------- state
+const today = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+let S = { nom:"", date:today(), journee:510, lots:[], sent:false, v:2 };
+try { const s = JSON.parse(localStorage.getItem(KEY)||"null"); if (s) { if (!s.v) { if (s.journee===450) s.journee=510; s.v=2; } S = Object.assign(S, s); } } catch(e){}
+let bannerText = "";
+if (S.date !== today()) {
+  if (S.sent || !S.lots.length) { S.date = today(); S.lots = []; S.sent = false; }
+  else bannerText = "Ta journée du " + fmtDate(S.date) + " n'a pas été envoyée. Envoie-la, ou touche « Nouvelle journée » en bas du récap.";
+}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} };
+
+// editor state
+let E, editIdx = -1;
+function blank(){ return { type:"aff", ref:"", ligne:(S.lots.at(-1)||{}).ligne||"Yuze", detail:"", statut:"En cours", min:0 }; }
+E = blank();
+
+// ---------- helpers
+function hm(m){ const neg=m<0; m=Math.abs(m); return (neg?"−":"")+Math.floor(m/60)+"h"+String(m%60).padStart(2,"0"); }
+function hmColon(m){ return Math.floor(m/60)+":"+String(m%60).padStart(2,"0"); }
+function fmtDate(iso){ const [y,mo,d]=iso.split("-"); return d+"/"+mo+"/"+y; }
+const $ = id => document.getElementById(id);
+const used = () => S.lots.reduce((a,l)=>a+l.min,0);
+const usedExcept = i => S.lots.reduce((a,l,j)=>a+(j===i?0:l.min),0);
+function press(on, off){ on.setAttribute("aria-pressed","true"); off.setAttribute("aria-pressed","false"); }
+
+// ---------- render
+function render(){
+  $("nom").value = S.nom; $("date").value = S.date;
+  $("journee").textContent = hm(S.journee);
+  const u = used(), rest = S.journee - u;
+  $("reste").textContent = hm(rest);
+  $("total").textContent = "Total " + hm(u);
+  const st = rest>0 ? "left" : rest===0 ? "done" : "over";
+  $("meter").dataset.state = st;
+  $("barFill").style.width = Math.min(100, S.journee? u/S.journee*100 : 0)+"%";
+  $("msg").textContent = st==="left" ? (S.lots.length ? "Encore "+hm(rest)+" à répartir sur tes lots." : "Ajoute tes lots : le compteur descend tout seul.")
+                        : st==="done" ? "Journée complète. Tu peux envoyer."
+                        : "Tu as pointé "+hm(-rest)+" de trop. Corrige un lot ou augmente la journée.";
+  $("banner").hidden = !bannerText; $("banner").textContent = bannerText;
+
+  const ul = $("lots"); ul.innerHTML = "";
+  if (!S.lots.length){ const li=document.createElement("li"); li.className="empty"; li.textContent="Aucun lot pour l'instant. Remplis le cadre ci-dessous puis « Ajouter le lot »."; ul.appendChild(li); }
+  S.lots.forEach((l,i)=>{
+    const li=document.createElement("li"); li.className="lot"+(i===editIdx?" sel":""); li.tabIndex=0;
+    li.setAttribute("aria-label","Modifier le lot "+(l.ref||"sans référence"));
+    const ref=document.createElement("div"); ref.className="ref"; ref.textContent=(l.type==="aff"?"Affaire ":"Code ")+(l.ref||"—");
+    const dur=document.createElement("div"); dur.className="dur"; dur.textContent=hm(l.min);
+    const sub=document.createElement("div"); sub.className="sub";
+    const t=document.createElement("span"); t.textContent=l.ligne+" · "+(l.detail||"sans détail");
+    const p=document.createElement("span"); p.className="pill "+(l.statut==="Terminé"?"ter":"enc"); p.textContent=l.statut;
+    sub.append(t,p); li.append(ref,dur,sub);
+    const open=()=>{ editIdx=i; E=Object.assign({},l); renderEditor(); render(); $("editor").scrollIntoView({behavior:"smooth",block:"start"}); };
+    li.onclick=open; li.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();open();} };
+    ul.appendChild(li);
+  });
+
+  // recap + send
+  const ok = S.lots.length>0 && S.nom.trim() && rest===0;
+  const rc = recapText();
+  $("recapCard").hidden = !S.lots.length;
+  $("recap").textContent = rc;
+  const send = $("send");
+  if (FORM_TEMPLATE){
+    send.textContent = S.sent ? "Renvoyer ma journée" : "Envoyer ma journée";
+    send.href = ok ? formUrl() : "#";
+    send.setAttribute("aria-disabled", ok ? "false" : "true");
+  } else {
+    send.textContent = "Voir le récap";
+    send.href = "#recapCard"; send.removeAttribute("target");
+    send.setAttribute("aria-disabled", S.lots.length ? "false" : "true");
+  }
+}
+
+function renderEditor(){
+  press(E.type==="aff"?$("tAff"):$("tCode"), E.type==="aff"?$("tCode"):$("tAff"));
+  $("refLbl").textContent = E.type==="aff" ? "N° affaire" : "Code prépa ou n° de devis";
+  $("ref").placeholder = E.type==="aff" ? "ex. A2026-118" : "ex. PREP-045";
+  $("ref").value = E.ref;
+  press(E.ligne==="Yuze"?$("lYuze"):$("lShelter"), E.ligne==="Yuze"?$("lShelter"):$("lYuze"));
+  const box=$("details"); box.innerHTML="";
+  DETAILS[E.ligne].forEach(d=>{ const b=document.createElement("button"); b.type="button"; b.textContent=d; b.setAttribute("aria-pressed", String(E.detail===d)); b.onclick=()=>{E.detail=d; renderEditor();}; box.appendChild(b); });
+  press(E.statut==="En cours"?$("sEnc"):$("sTer"), E.statut==="En cours"?$("sTer"):$("sEnc"));
+  $("durVal").textContent = hm(E.min);
+  const editing = editIdx>=0;
+  $("edTitle").textContent = editing ? "Modifier le lot" : "Ajouter un lot";
+  $("edSave").textContent = editing ? "Enregistrer" : "Ajouter le lot";
+  $("edDel").hidden = !editing; $("edCancel").hidden = !editing;
+  const restHere = S.journee - (editing ? usedExcept(editIdx) : used());
+  $("edHint").textContent = "Reste dispo : " + hm(Math.max(0,restHere));
+  $("edErr").hidden = true;
+}
+
+function recapText(){
+  const lines = S.lots.map(l => [(l.type==="aff"?"Affaire ":"Code ")+(l.ref||"—"), l.ligne+" - "+(l.detail||"?"), l.statut, hmColon(l.min)].join(" | "));
+  return (S.nom||"(nom ?)")+" — "+fmtDate(S.date)+"\n"+lines.join("\n")+"\nTOTAL "+hmColon(used())+" / journée "+hmColon(S.journee);
+}
+function formUrl(){
+  const detail = S.lots.map(l => [l.type==="aff"?"AFF":"CODE", l.ref||"", l.ligne, l.detail||"", l.statut, hmColon(l.min)].join(" | ")).join("\n");
+  const map = { NOM:S.nom.trim(), DATE:fmtDate(S.date), DETAIL:detail, TOTAL:hmColon(used()) };
+  try {
+    const u = new URL(FORM_TEMPLATE);
+    for (const [k,v] of [...u.searchParams]) if (map[v] !== undefined) u.searchParams.set(k, map[v]);
+    return u.toString();
+  } catch(e){ return FORM_TEMPLATE; }
+}
+
+// ---------- events
+$("nom").oninput = e => { S.nom = e.target.value; save(); render(); };
+$("date").onchange = e => { S.date = e.target.value || today(); bannerText=""; save(); render(); };
+$("dayMinus").onclick = () => { S.journee = Math.max(15, S.journee-15); save(); render(); renderEditor(); };
+$("dayPlus").onclick  = () => { S.journee = Math.min(14*60, S.journee+15); save(); render(); renderEditor(); };
+$("tAff").onclick = () => { E.type="aff"; renderEditor(); };
+$("tCode").onclick = () => { E.type="code"; renderEditor(); };
+$("ref").oninput = e => { E.ref = e.target.value.toUpperCase(); };
+$("lYuze").onclick = () => { if(E.ligne!=="Yuze"){E.ligne="Yuze"; E.detail="";} renderEditor(); };
+$("lShelter").onclick = () => { if(E.ligne!=="Shelter"){E.ligne="Shelter"; E.detail="";} renderEditor(); };
+$("sEnc").onclick = () => { E.statut="En cours"; renderEditor(); };
+$("sTer").onclick = () => { E.statut="Terminé"; renderEditor(); };
+document.querySelectorAll(".steps button").forEach(b => b.onclick = () => {
+  const d = b.dataset.d;
+  if (d==="rest") E.min = Math.max(0, S.journee - (editIdx>=0 ? usedExcept(editIdx) : used()));
+  else if (d==="0") E.min = 0;
+  else E.min = Math.max(0, Math.min(14*60, E.min + Number(d)));
+  $("durVal").textContent = hm(E.min);
+});
+$("edSave").onclick = () => {
+  E.ref = $("ref").value.trim().toUpperCase();
+  const err = !E.ref ? "Indique le n° d'affaire ou le code prépa." : !E.detail ? "Choisis le détail (Câblage, Ctrl…)." : E.min<=0 ? "Mets le temps passé sur ce lot." : "";
+  if (err){ $("edErr").textContent = err; $("edErr").hidden = false; return; }
+  if (editIdx>=0) S.lots[editIdx] = Object.assign({}, E); else S.lots.push(Object.assign({}, E));
+  S.sent = false; editIdx = -1; E = blank(); save(); render(); renderEditor();
+};
+$("edCancel").onclick = () => { editIdx=-1; E=blank(); render(); renderEditor(); };
+$("edDel").onclick = () => { if(editIdx<0) return; S.lots.splice(editIdx,1); editIdx=-1; E=blank(); save(); render(); renderEditor(); };
+$("send").onclick = e => {
+  if ($("send").getAttribute("aria-disabled")==="true"){ e.preventDefault(); return; }
+  if (FORM_TEMPLATE){ S.sent = true; save(); setTimeout(render, 300); }
+  else { e.preventDefault(); $("recapCard").scrollIntoView({behavior:"smooth"}); }
+};
+$("copy").onclick = () => {
+  const t = recapText();
+  const done = () => $("copyMsg").textContent = "Récap copié.";
+  const fail = () => { const r=document.createRange(); r.selectNodeContents($("recap")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); $("copyMsg").textContent="Texte sélectionné : fais Copier."; };
+  try { navigator.clipboard.writeText(t).then(done, fail); } catch(e){ fail(); }
+};
+let armed = false;
+$("newDay").onclick = () => {
+  if (!armed){ armed=true; $("newDay").textContent="Confirmer : tout effacer"; setTimeout(()=>{armed=false;$("newDay").textContent="Nouvelle journée";},4000); return; }
+  armed=false; $("newDay").textContent="Nouvelle journée";
+  S.lots=[]; S.sent=false; S.date=today(); bannerText=""; editIdx=-1; E=blank(); save(); render(); renderEditor();
+};
+
+render(); renderEditor();
+</script>
+
+</body></html>
