@@ -149,8 +149,9 @@ button:disabled{opacity:.45;cursor:default}
     <div class="top"><h2 id="edTitle">Ajouter un lot</h2><small class="hint" id="edHint"></small></div>
 
     <div class="seg" role="group" aria-label="Ligne">
-      <button id="lYuze" aria-pressed="true">Yuze</button>
+      <button id="lYuze" aria-pressed="true">Yuze/Atmoce</button>
       <button id="lShelter" aria-pressed="false">Shelter</button>
+      <button id="lMcDo" aria-pressed="false">McDo</button>
       <button id="lDivers" aria-pressed="false">Divers atelier</button>
     </div>
     <div class="chips" id="details" role="group" aria-label="Détail heures"></div>
@@ -208,7 +209,9 @@ button:disabled{opacity:.45;cursor:default}
 // ---------- Configuration (lien Forms pré-rempli : NOM, DATE, DETAIL, TOTAL comme valeurs repères)
 const FORM_TEMPLATE = "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=kP70XPwwDEC7J6qKvEznn6Ni1tal26lEjqYnsNiF8bVUQUlKTlJURVY3RFNKQjVCUURCOU8zTjRDWC4u&rf4d17d8abc0c46f183b413df000949b6=NOM&r284fbb1cb6ba41718e93dd3a1c037e24=DATE&re245ff36a8384a53861f19479e9cf24c=DETAIL&r9d1485f3aac2460ea477379ed499888c=TOTAL";
 // Opérations = liste Base!H du fichier « Suivi productivité Série »
+const LABELS = { Yuze:"Yuze/Atmoce", Shelter:"Shelter", McDo:"McDo", Divers:"Divers atelier" };
 const DETAILS = {
+  McDo: ["Prépa","Câblage","Contrôle"],
   Yuze: ["Prépa","Programmation","Câblage","Contrôle","Robot"],
   Shelter: ["Prépa caisse","Tableaux","AGCP","Intégration","Contrôle"]
 };
@@ -222,7 +225,7 @@ let S = { nom:"", date:today(), journee:510, lots:[], sent:false, v:2 };
 try { const s = JSON.parse(localStorage.getItem(KEY)||"null"); if (s) { if (!s.v) { if (s.journee===450) s.journee=510; s.v=2; } S = Object.assign(S, s); } } catch(e){}
 S.lots = (S.lots||[]).map(l => {
   const op = l.op || (l.detail==="Ctrl" ? "Contrôle" : (l.detail||""));
-  const ligne = (op===OP_DIVERS || op==="Formation") ? "Divers" : (l.ligne==="Shelter" || DETAILS.Shelter.includes(op) && !DETAILS.Yuze.includes(op)) ? "Shelter" : "Yuze";
+  const ligne = (op===OP_DIVERS || op==="Formation") ? "Divers" : (l.ligne && LABELS[l.ligne]) ? l.ligne : (DETAILS.Shelter.includes(op) && !DETAILS.Yuze.includes(op)) ? "Shelter" : "Yuze";
   return Object.assign({}, l, { op: ligne==="Divers" ? OP_DIVERS : op, ligne, type: l.type==="aff" ? "aff" : "lot", com: l.com||"" });
 });
 if (S.nom && S.nomF===undefined){ const t=S.nom.trim().split(/\s+/); S.nomF=t.shift()||""; S.prenom=t.join(" "); }
@@ -237,7 +240,7 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch
 
 // editor state
 let E, editIdx = -1;
-function blank(){ const lg = (S.lots.at(-1)||{}).ligne; return { ligne: lg==="Shelter" ? "Shelter" : "Yuze", type:"lot", ref:"", op:"", com:"", statut:"En cours", min:0 }; }
+function blank(){ const lg = (S.lots.at(-1)||{}).ligne; return { ligne: (lg==="Shelter"||lg==="McDo") ? lg : "Yuze", type: lg==="McDo" ? "aff" : "lot", ref:"", op:"", com:"", statut:"En cours", min:0 }; }
 E = blank();
 
 // ---------- helpers
@@ -274,7 +277,7 @@ function render(){
     const ref=document.createElement("div"); ref.className="ref"; ref.textContent=l.ligne==="Divers" ? "Divers atelier" : (l.type==="aff"?"Affaire ":"Lot ")+l.ref;
     const dur=document.createElement("div"); dur.className="dur"; dur.textContent=hm(l.min);
     const sub=document.createElement("div"); sub.className="sub";
-    const t=document.createElement("span"); t.textContent=(l.ligne==="Divers" ? "Affaire "+l.ref : l.ligne+" · "+l.op) + (l.com ? " · "+l.com : "");
+    const t=document.createElement("span"); t.textContent=(l.ligne==="Divers" ? "Affaire "+l.ref : LABELS[l.ligne]+" · "+l.op) + (l.com ? " · "+l.com : "");
     const p=document.createElement("span"); p.className="pill "+(l.statut==="Terminé"?"ter":"enc"); p.textContent=l.statut;
     sub.append(t,p); li.append(ref,dur,sub);
     const open=()=>{ editIdx=i; E=Object.assign({},l); renderEditor(); render(); $("editor").scrollIntoView({behavior:"smooth",block:"start"}); };
@@ -300,11 +303,11 @@ function render(){
 }
 
 function renderEditor(){
-  ["Yuze","Shelter","Divers"].forEach(g => $("l"+g).setAttribute("aria-pressed", String(E.ligne===g)));
+  ["Yuze","Shelter","McDo","Divers"].forEach(g => $("l"+g).setAttribute("aria-pressed", String(E.ligne===g)));
   const box=$("details"); box.innerHTML=""; box.hidden = E.ligne==="Divers";
   (DETAILS[E.ligne]||[]).forEach(o=>{ const b=document.createElement("button"); b.type="button"; b.textContent=o; b.setAttribute("aria-pressed", String(E.op===o)); b.onclick=()=>{ keepInputs(); E.op=o; renderEditor(); }; box.appendChild(b); });
   press(E.type==="aff"?$("tAff"):$("tLot"), E.type==="aff"?$("tLot"):$("tAff"));
-  $("refSeg").hidden = E.ligne==="Divers";
+  $("refSeg").hidden = E.ligne==="Divers" || E.ligne==="McDo";
   $("refLbl").textContent = E.type==="aff" ? "N° d'affaire" : "N° du lot / N° du devis";
   $("ref").placeholder = E.type==="aff" ? "ex. 20260100" : "ex. JA26431 / 7541";
   $("ref").value = E.ref; $("com").value = E.com||"";
@@ -321,7 +324,7 @@ function renderEditor(){
 }
 
 function recapText(){
-  const lines = S.lots.map(l => [(l.type==="aff"?"Affaire ":"Lot ")+l.ref, l.ligne==="Divers" ? "Divers atelier" : l.ligne+" - "+l.op, l.statut, hmColon(l.min)].concat(l.com?[l.com]:[]).join(" | "));
+  const lines = S.lots.map(l => [(l.type==="aff"?"Affaire ":"Lot ")+l.ref, l.ligne==="Divers" ? "Divers atelier" : LABELS[l.ligne]+" - "+l.op, l.statut, hmColon(l.min)].concat(l.com?[l.com]:[]).join(" | "));
   return (fullName()||"(nom ?)")+" — "+fmtDate(S.date)+"\n"+lines.join("\n")+"\nTOTAL "+hmColon(used())+" / journée "+hmColon(S.journee);
 }
 function formUrl(){
@@ -348,16 +351,19 @@ $("tLot").onclick = () => { keepInputs(); E.type="lot"; renderEditor(); };
 $("tAff").onclick = () => { keepInputs(); E.type="aff"; renderEditor(); };
 $("lYuze").onclick = () => setLigne("Yuze");
 $("lShelter").onclick = () => setLigne("Shelter");
+$("lMcDo").onclick = () => setLigne("McDo");
 $("lDivers").onclick = () => setLigne("Divers");
 function setLigne(g){
   keepInputs();
   if (E.ligne===g) return;
-  const wasDivers = E.ligne==="Divers";
+  const wasDivers = E.ligne==="Divers", wasMcDo = E.ligne==="McDo";
   E.ligne = g;
   if (g==="Divers"){ E.op=OP_DIVERS; E.type="aff"; E.ref=affDivers(); E.statut="Terminé"; }
   else {
     if (!DETAILS[g].includes(E.op)) E.op="";
-    if (wasDivers){ E.type="lot"; E.ref=""; E.statut="En cours"; }
+    if (wasDivers){ E.ref=""; E.statut="En cours"; }
+    if (g==="McDo") E.type="aff";
+    else if (wasDivers || wasMcDo){ E.type="lot"; if (wasMcDo) E.ref=""; }
   }
   renderEditor();
 }
@@ -375,6 +381,7 @@ document.querySelectorAll(".steps button").forEach(b => b.onclick = () => {
 $("edSave").onclick = () => {
   E.ref = $("ref").value.trim().toUpperCase(); E.com = $("com").value.trim();
   if (E.ligne==="Divers"){ E.op=OP_DIVERS; E.type="aff"; if(!E.ref) E.ref=affDivers(); }
+  if (E.ligne==="McDo") E.type="aff";
   const err = !E.op ? "Choisis l'étape (Câblage, Robot…)." : !E.ref ? "Indique le n° du lot, du devis ou de l'affaire." : (E.ligne==="Divers" && !E.com) ? "Indique en commentaire ce que tu as fait (Réunion, Top 5, rangement…)." : E.min<=0 ? "Mets le temps passé sur ce lot." : "";
   if (err){ $("edErr").textContent = err; $("edErr").hidden = false; return; }
   if (editIdx>=0) S.lots[editIdx] = Object.assign({}, E); else S.lots.push(Object.assign({}, E));
