@@ -48,7 +48,11 @@ input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(-
 .meter[data-state=over] .big{color:var(--bad)}
 .lbl{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .day{display:flex;align-items:center;gap:6px}
-.day b{font-family:var(--f-display);font-size:24px;font-variant-numeric:tabular-nums;min-width:62px;text-align:center}
+.day input{font-family:var(--f-display);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;width:96px;text-align:center;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 2px;min-height:44px}
+.day input::-webkit-calendar-picker-indicator{display:none}
+.day input::-webkit-datetime-edit{padding:0}
+.day-hint{font-size:12px;color:var(--muted);text-align:right;margin-top:4px}
+html,button,a,input,label{touch-action:manipulation}
 .bar{height:10px;border-radius:5px;background:var(--bg);border:1px solid var(--line);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--warn);width:0;transition:width .2s}
 .meter[data-state=done] .bar i{background:var(--ok)}
@@ -131,9 +135,10 @@ button:disabled{opacity:.45;cursor:default}
         <div class="lbl">Journée</div>
         <div class="day">
           <button class="sq" id="dayMinus" aria-label="Journée moins 5 minutes">−</button>
-          <b id="journee">8h30</b>
+          <input type="time" id="journee" step="300" value="08:30" aria-label="Durée de la journée (heures:minutes)">
           <button class="sq" id="dayPlus" aria-label="Journée plus 5 minutes">+</button>
         </div>
+        <div class="day-hint">Touche l'heure pour la modifier</div>
       </div>
     </div>
     <div class="bar"><i id="barFill"></i></div>
@@ -231,6 +236,8 @@ S.lots = (S.lots||[]).map(l => {
 if (S.nom && S.nomF===undefined){ const t=S.nom.trim().split(/\s+/); S.nomF=t.shift()||""; S.prenom=t.join(" "); }
 S.nomF = S.nomF||""; S.prenom = S.prenom||"";
 const fullName = () => (S.nomF.trim().toUpperCase() + " " + S.prenom.trim()).trim();
+const journeeDefaut = iso => { const d = new Date(iso + "T12:00:00"); return d.getDay() === 5 ? 300 : 510; };  // vendredi 5h00, sinon 8h30
+const appliquerJourneeDefaut = () => { if (S.journeeFixee !== S.date) S.journee = journeeDefaut(S.date); };
 let bannerText = "";
 if (S.date !== today()) {
   if (S.sent || !S.lots.length) { S.date = today(); S.lots = []; S.sent = false; }
@@ -257,7 +264,7 @@ function render(){
   if (document.activeElement!==$("nomF")) $("nomF").value = S.nomF;
   if (document.activeElement!==$("prenom")) $("prenom").value = S.prenom;
   $("date").value = S.date;
-  $("journee").textContent = hm(S.journee);
+  if (document.activeElement !== $("journee")) $("journee").value = String(Math.floor(S.journee/60)).padStart(2,"0") + ":" + String(S.journee%60).padStart(2,"0");
   const u = used(), rest = S.journee - u;
   $("reste").textContent = hm(rest);
   $("total").textContent = "Total " + hm(u);
@@ -343,9 +350,18 @@ function formUrl(){
 // ---------- events
 $("nomF").oninput = e => { S.nomF = e.target.value; save(); render(); };
 $("prenom").oninput = e => { S.prenom = e.target.value; save(); render(); };
-$("date").onchange = e => { S.date = e.target.value || today(); bannerText=""; save(); render(); };
-$("dayMinus").onclick = () => { S.journee = Math.max(5, S.journee-5); save(); render(); renderEditor(); };
-$("dayPlus").onclick  = () => { S.journee = Math.min(14*60, S.journee+5); save(); render(); renderEditor(); };
+$("date").onchange = e => { S.date = e.target.value || today(); appliquerJourneeDefaut(); bannerText=""; save(); render(); renderEditor(); };
+$("dayMinus").onclick = () => { S.journee = Math.max(5, S.journee-5); S.journeeFixee = S.date; save(); render(); renderEditor(); };
+$("dayPlus").onclick  = () => { S.journee = Math.min(14*60, S.journee+5); S.journeeFixee = S.date; save(); render(); renderEditor(); };
+$("journee").onchange = e => {
+  const m = /^(\d{1,2}):(\d{2})/.exec(e.target.value || "");
+  if (!m) return;
+  const v = Number(m[1])*60 + Number(m[2]);
+  if (v < 5) return;
+  S.journee = Math.min(14*60, v); S.journeeFixee = S.date; save(); render(); renderEditor();
+};
+$("journee").onblur = () => render();
+$("journee").onclick = e => { try { e.target.showPicker && e.target.showPicker(); } catch(_){} };
 function keepInputs(){ E.ref=$("ref").value.trim().toUpperCase(); E.com=$("com").value; }
 $("tLot").onclick = () => { keepInputs(); E.type="lot"; renderEditor(); };
 $("tAff").onclick = () => { keepInputs(); E.type="aff"; renderEditor(); };
@@ -404,9 +420,10 @@ let armed = false;
 $("newDay").onclick = () => {
   if (!armed){ armed=true; $("newDay").textContent="Confirmer : tout effacer"; setTimeout(()=>{armed=false;$("newDay").textContent="Nouvelle journée";},4000); return; }
   armed=false; $("newDay").textContent="Nouvelle journée";
-  S.lots=[]; S.sent=false; S.date=today(); bannerText=""; editIdx=-1; E=blank(); save(); render(); renderEditor();
+  S.lots=[]; S.sent=false; S.date=today(); appliquerJourneeDefaut(); bannerText=""; editIdx=-1; E=blank(); save(); render(); renderEditor();
 };
 
+appliquerJourneeDefaut(); save();
 render(); renderEditor();
 </script>
 
