@@ -157,6 +157,7 @@ button:disabled{opacity:.45;cursor:default}
       <button id="lYuze" aria-pressed="true">Yuze/Atmoce</button>
       <button id="lShelter" aria-pressed="false">Shelter</button>
       <button id="lMcDo" aria-pressed="false">McDo</button>
+      <button id="lMag" aria-pressed="false">Magasin</button>
       <button id="lDivers" aria-pressed="false">Divers atelier</button>
     </div>
     <div class="chips" id="details" role="group" aria-label="Détail heures"></div>
@@ -214,9 +215,10 @@ button:disabled{opacity:.45;cursor:default}
 // ---------- Configuration (lien Forms pré-rempli : NOM, DATE, DETAIL, TOTAL comme valeurs repères)
 const FORM_TEMPLATE = "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=kP70XPwwDEC7J6qKvEznn6Ni1tal26lEjqYnsNiF8bVUQUlKTlJURVY3RFNKQjVCUURCOU8zTjRDWC4u&rf4d17d8abc0c46f183b413df000949b6=NOM&r284fbb1cb6ba41718e93dd3a1c037e24=DATE&re245ff36a8384a53861f19479e9cf24c=DETAIL&r9d1485f3aac2460ea477379ed499888c=TOTAL";
 // Opérations = liste Base!H du fichier « Suivi productivité Série »
-const LABELS = { Yuze:"Yuze/Atmoce", Shelter:"Shelter", McDo:"McDo", Divers:"Divers atelier" };
+const LABELS = { Yuze:"Yuze/Atmoce", Shelter:"Shelter", McDo:"McDo", Mag:"Magasin", Divers:"Divers atelier" };
 const DETAILS = {
   McDo: ["Prépa","Câblage","Contrôle"],
+  Mag: ["Prépa magasin"],
   Yuze: ["Prépa","Prépa fils","Programmation","Câblage","Contrôle","Robot"],
   Shelter: ["Prépa caisse","Tableaux","AGCP","Intégration","Contrôle"]
 };
@@ -310,7 +312,7 @@ function render(){
 }
 
 function renderEditor(){
-  ["Yuze","Shelter","McDo","Divers"].forEach(g => $("l"+g).setAttribute("aria-pressed", String(E.ligne===g)));
+  ["Yuze","Shelter","McDo","Mag","Divers"].forEach(g => $("l"+g).setAttribute("aria-pressed", String(E.ligne===g)));
   const box=$("details"); box.innerHTML=""; box.hidden = E.ligne==="Divers";
   (DETAILS[E.ligne]||[]).forEach(o=>{ const b=document.createElement("button"); b.type="button"; b.textContent=o; b.setAttribute("aria-pressed", String(E.op===o)); b.onclick=()=>{ keepInputs(); E.op=o; renderEditor(); }; box.appendChild(b); });
   press(E.type==="aff"?$("tAff"):$("tLot"), E.type==="aff"?$("tLot"):$("tAff"));
@@ -368,6 +370,7 @@ $("tAff").onclick = () => { keepInputs(); E.type="aff"; renderEditor(); };
 $("lYuze").onclick = () => setLigne("Yuze");
 $("lShelter").onclick = () => setLigne("Shelter");
 $("lMcDo").onclick = () => setLigne("McDo");
+$("lMag").onclick = () => setLigne("Mag");
 $("lDivers").onclick = () => setLigne("Divers");
 function setLigne(g){
   keepInputs();
